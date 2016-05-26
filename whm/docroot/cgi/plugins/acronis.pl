@@ -80,7 +80,7 @@ sub run {
 			
 			
 			
-			print "{\"status\":200, data:".getBackUpPlans($acronisData)."}\n";
+			print "{\"status\":200, \"data\":".getBackUpPlans($acronisData)."}\n";
 			exit;
 		 }
 		print "{\"error\":\"there was an error\"}\n";
@@ -159,14 +159,12 @@ sub getBackUpPlans {
 		}		
 	}
 	
-	my $plans = JSON::decode_json(get($_[0], 0, '/api/ams/backup/plans')->content());
-	my $clientList = [];
-	foreach my $i (0 .. $#plans) {
-	  $clientList.push({id => $plans[$i].id, name => $plans[$i].name});
-	}
+	my $plans = JSON::decode_json(get($_[0], 0, '/api/ams/backup/plans')->content())->{data};
+	my @plan_names = map {{ id => $_->{id}, name => $_->{name}}} @$plans;
+
 	
 	
-	return JSON::encode_json($clientList);
+	return JSON::encode_json(\@plan_names);
 
 }
 

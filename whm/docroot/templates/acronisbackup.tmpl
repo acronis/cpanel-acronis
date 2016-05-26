@@ -12,7 +12,7 @@
         extra_style = 'news_panel{}'
 -%]
 
-
+Acronis Backup plugin allows end users to recover own websites and databases in case if this server is backed up with Acronis Backup.
  <section class="container">
  <div class="form-group">
 <div id="validate" style="display:none;">
@@ -20,26 +20,40 @@
                     <li class="validation validation-error">
                         <span class="glyphicon glyphicon-exclamation-sign"></span>
                         <span class="validation-message">
-                           Hostname or Username is missing!
+                           Details missing!
                         </span>
                     </li>
         </div>
 
-      <h1>Logging In</h1>
-      <div class="form-group"
+      <h1>Setup Access for Acronis Backup</h1>
+      <div class="form-group">
+      Please specify credentials to your Acronis Backup account.<br></br>
+        [% IF options.host %]
+           <p><label for="HostName">Management Console URL*</label> <input type="text" id="HostName" class="form-control" name="HostName" value="[% options.host %]"></p>
+        [% ELSE %]
+           <p><label for="HostName">Management Console URL*</label> <input type="text" id="HostName" class="form-control" name="HostName"></p>
+        [% END %]
 
-           <p><label for="UserName">User Name*</label> <input type="text" id="UserName" class="form-control" name="UserName"></p>
-          <p><label  for="HostName">Host Name*</label> <input type="text" id="HostName" class="form-control" name="HostName"></p>
+[% IF options.user %]
+           <p><label for="UserName">Login*</label> <input type="text" id="UserName" class="form-control" name="UserName" value="[% options.user %]"></p>
+        [% ELSE %]
+          <p><label for="UserName">Login*</label> <input type="text" id="UserName" class="form-control" name="UserName"></p>
 
-        <p><label id="passcolor" for="password">Password</label> <input id="UserPass" type="password" class="form-control" name="UserPass" data-isrequired="true"></p>
+        [% END %]
 
-                <p class="button"><button type="button" class="btn btn-primary" onclick="myFunction(event, $(this))">Next</button></p>   
+
+
+[% IF ! options.pass %]
+        <p><label id="passcolor" for="password">Password*</label> <input id="UserPass" type="password" class="form-control" name="UserPass" ></p>
+[% END -%]
+<br></br>
+                <p class="button"><button type="button" class="btn btn-primary" onclick="myFunction(event, $(this))">Next</button></p>
       </div>
-	  
-	  <br></br>
+
+          <br></br>
     </div>
-        <div class="form-group" id="Backup" style="display:none;">
-        <h1>Backup Configuration</h1>
+         <div class="form-group" id="Backup" style="display:none;">
+        <h1>Configure Backup</h1>
 
         <label for="BackUpPlan">Backup Plan </label> <select id="BackUpPlan" name="BackUpPlan" class="form-control">
   <option value="Hourly">Hourly</option>
@@ -53,54 +67,72 @@
 
 
         </section>
-		
-		<script>
+
+                <script>
                 function myFunction(e, button) {
                 var flag=1;
 
                 $('#HostName').css({"border-color":'black'});
                 $('#UserName').css({"border-color":'black'});
+$('#UserPass').css({"border-color":'black'});
+
                 $('#validate').hide();
 
                 if ($('#HostName').val() == null || $('#HostName').val() == "") {
-					$('#HostName').css({"border-color":'red'});
-					$('#validate').show();
-					$( "#Backup" ).hide();
-					flag=-1;
-				}
+                                        $('#HostName').css({"border-color":'red'});
+                                        $('#validate').show();
+                                        $( "#Backup" ).hide();
+                                        flag=-1;
+                                }
 
                 if ($('#UserName').val() == null || $('#UserName').val() == "") {
-					$('#UserName').css({"border-color":'red'});
-					$('#validate').show();
-					$( "#Backup" ).hide();
-					flag=-1;
+                                        $('#UserName').css({"border-color":'red'});
+                                        $('#validate').show();
+                                        $( "#Backup" ).hide();
+                                        flag=-1;
                 }
-				
-				 if (($('#UserPass').val() == null || $('#UserPass').val() == "") && $('#UserPass').data("isrequired")=="true") {
-					$('#UserPass').css({"border-color":'red'});
-					$('#validate').show();
-					$( "#Backup" ).hide();
-					flag=-1;
+
+[% IF ! options.pass %]
+                 if ($('#UserPass').val() == null || $('#UserPass').val() == "") {
+                                        $('#UserPass').css({"border-color":'red'});
+                                        $('#validate').show();
+                                        $( "#Backup" ).hide();
+                                        flag=-1;
                 }
+[% END -%]
+
+
                 if(flag==1){
 
-					$.ajax({
-					  type: "POST",
-					  url: "acronis.pl",
-					  data: { UserName: $('#UserName').val(), HostName: $('#HostName').val(), UserPass: $('#UserPass').val(), step:"step1" },
-					  dataType: 'json',
-					}).done(function(data){
-					//alert(data);
-						$( "#Backup" ).show()
-					
-					}).fail(function(jqXHR, textStatus, errorThrown) {
-						alert( textStatus);
-					});
-				
-				
-					
+                                        $.ajax({
+                                          type: "POST",
+                                          url: "acronis.pl",
+                                          data: { UserName: $('#UserName').val().trim(), HostName: $('#HostName').val().trim(), UserPass: $('#UserPass').val().trim(), step:"step1" },
+                                          dataType: 'json',
+                                        }).done(function(data){
+											if(data.status!==200){
+												alert(data.msg);
+												$( "#Backup" ).hide();
+												return;
+											}
+											$('#BackUpPlan > option').remove();
+											
+											for(var i=0;i<data.data.length; i++){
+												$('#BackUpPlan').append($('<option value="'+ data.data[i].id +'">'+ data.data[i].name +'</option>'));
+											}
+											
+											$( "#Backup" ).show();
+
+                                        }).fail(function(jqXHR, textStatus, errorThrown) {
+                                                alert( textStatus);
+                                        });
+
+
+
                 }
 }
                 </script>
 
 [% END -%]
+
+
