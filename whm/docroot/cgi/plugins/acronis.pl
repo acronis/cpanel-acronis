@@ -80,11 +80,11 @@ sub run {
 			 
 			 if(validateUserHost($acronisData, 0, $conf) eq ''){
 				my $planData = getBackUpPlans($acronisData);
-				if(defined $planData->status){
+				if($planData->{status} != 200 ){
 					print JSON::encode_json($planData)."\n";
 					exit;
 				}
-				print "{\"status\":200, \"data\":".$planData."}\n";
+				print "{\"status\":200, \"data\":".JSON::encode_json($planData->{data})."}\n";
 				exit;
 			 }
 			print "{\"status\":500,\"msg\":\"there was an error\"}\n";
@@ -206,7 +206,7 @@ sub getBackUpPlans {
 	my $plans = JSON::decode_json(get($_[0], 0, '/api/ams/backup/plans')->content())->{data};
 	@plan_names = map {{ id => $_->{id}, name => $_->{name}}} @$plans;
 
-	return JSON::encode_json(\@plan_names);
+	return {status=> 200, data => \@plan_names};
 
 }
 
