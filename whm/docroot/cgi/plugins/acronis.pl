@@ -216,13 +216,13 @@ sub validateUserHost {
 		return "username is empty";
 	}
 	
-	if ( $_[0]->{password} eq '' && $conf.pass eq '') {
+	if ( $_[0]->{password} eq '' && $_[2]->{pass} eq '') {
 		
 		return "password is empty";
 	}
 	
 	if($_[1] == 1){
-		if ( $_[0]->{password} eq '' && $conf.pass eq '') {
+		if ( $_[0]->{password} eq '' && $_[2]->{pass} eq '') {
 			
 			return "password is empty";
 		}
