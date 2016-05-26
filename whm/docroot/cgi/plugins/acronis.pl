@@ -79,7 +79,12 @@ sub run {
 			$acronisData->{password} = $prm->param('UserPass');		 
 			 
 			 if(validateUserHost($acronisData, 0, $conf) eq ''){
-				print "{\"status\":200, \"data\":".getBackUpPlans($acronisData)."}\n";
+				my $planData = getBackUpPlans($acronisData);
+				if(defined $planData->status){
+					print JSON::encode_json($planData)."\n";
+					exit;
+				}
+				print "{\"status\":200, \"data\":".$planData."}\n";
 				exit;
 			 }
 			print "{\"status\":500,\"msg\":\"there was an error\"}\n";
@@ -135,65 +140,72 @@ sub run {
 
 sub getCookie {
 
-	my $headers = HTTP::Headers->new('Content-Type' => &CONTENT_TYPE);
-	my $ua = LWP::UserAgent->new(
-		cookie_jar => {},
-		default_headers => $headers
-	);
-	my $uri = URI->new($_[0]->{url} . &API_URI);
-	$uri->path($uri->path . 'accounts/');
-	$uri->query_form('login' => $_[0]->{username});
-	
-	my $response = $ua->get($uri);
-	die $response->message() unless ($response->is_success());
-	
-	my $content = JSON::XS->new->utf8->decode($response->content());
-	$_[0]->{serverurl} = $content->{server_url};
+	eval {
+		my $headers = HTTP::Headers->new('Content-Type' => &CONTENT_TYPE);
+		my $ua = LWP::UserAgent->new(
+			cookie_jar => {},
+			default_headers => $headers
+		);
+		my $uri = URI->new($_[0]->{url} . &API_URI);
+		$uri->path($uri->path . 'accounts/');
+		$uri->query_form('login' => $_[0]->{username});
+		
+		my $response = $ua->get($uri);
+		die $response->message() unless ($response->is_success());
+		
+		my $content = JSON::XS->new->utf8->decode($response->content());
+		$_[0]->{serverurl} = $content->{server_url};
 
-	$uri = URI->new($_[0]->{serverurl} . &API_URI);
-	$uri->path($uri->path . '/login/');;
-	$response = $ua->post($uri, Content_Type => &CONTENT_TYPE, 'Content' => JSON::XS->new->utf8->encode({username => $_[0]->{username}, password => $_[0]->{password}}));
-	die $response->message() unless ($response->is_success());
-	
-	$uri = URI->new($_[0]->{serverurl} . &API_URI);
-	$uri->path($uri->path . '/groups/self/backupconsole');;
-	$response = $ua->get($uri);
-	die $response->message() unless ($response->is_success());
+		$uri = URI->new($_[0]->{serverurl} . &API_URI);
+		$uri->path($uri->path . '/login/');;
+		$response = $ua->post($uri, Content_Type => &CONTENT_TYPE, 'Content' => JSON::XS->new->utf8->encode({username => $_[0]->{username}, password => $_[0]->{password}}));
+		die $response->message() unless ($response->is_success());
+		
+		$uri = URI->new($_[0]->{serverurl} . &API_URI);
+		$uri->path($uri->path . '/groups/self/backupconsole');;
+		$response = $ua->get($uri);
+		die $response->message() unless ($response->is_success());
 
-	$content = JSON::XS->new->utf8->decode($response->content());
-	$_[0]->{access_token} = $content->{token};
-	$_[0]->{serverurl} = $content->{host};
-	
-	$uri = URI->new($_[0]->{serverurl});
-	$uri->path($uri->path . '/api/remote_connection');;
-	$response = $ua->post($uri, Content_Type => &CONTENT_TYPE, 'Content' => JSON::XS->new->utf8->encode({access_token => $_[0]->{access_token}}));
-	
-	die $response->message() unless ($response->is_success());
-	
-	$_[0]->{cookies} = $ua->cookie_jar;
-	
-	$_[0]->{cookies}->save(&DATA_PATH . 'whmapi.cookie');
+		$content = JSON::XS->new->utf8->decode($response->content());
+		$_[0]->{access_token} = $content->{token};
+		$_[0]->{serverurl} = $content->{host};
+		
+		$uri = URI->new($_[0]->{serverurl});
+		$uri->path($uri->path . '/api/remote_connection');;
+		$response = $ua->post($uri, Content_Type => &CONTENT_TYPE, 'Content' => JSON::XS->new->utf8->encode({access_token => $_[0]->{access_token}}));
+		
+		die $response->message() unless ($response->is_success());
+		
+		$_[0]->{cookies} = $ua->cookie_jar;
+		
+		$_[0]->{cookies}->save(&DATA_PATH . 'whmapi.cookie');
 
-	return 1;
+		return '';
+	};
+	
+	if ($@) {
+		return $@;
+	}
 }
 
 sub getBackUpPlans {
 	
+	my @plan_names;
+
 	if ($_[0]->{cookies}) {
 		my $jar = HTTP::Cookies->new(file => $_[0]->{cookies});
 		my @urls = keys %{$jar->{COOKIES}};
 	}
 	else{
-		if(getCookie($_[0]) != 1){
-			return '';
+		my $cookieResponse = getCookie($_[0]);
+		if($cookieResponse ne ''){
+			return {status => 500, msg => $cookieResponse};
 		}		
 	}
 	
 	my $plans = JSON::decode_json(get($_[0], 0, '/api/ams/backup/plans')->content())->{data};
-	my @plan_names = map {{ id => $_->{id}, name => $_->{name}}} @$plans;
+	@plan_names = map {{ id => $_->{id}, name => $_->{name}}} @$plans;
 
-	
-	
 	return JSON::encode_json(\@plan_names);
 
 }
