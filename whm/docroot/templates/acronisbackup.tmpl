@@ -1,0 +1,84 @@
+[%
+    USE Whostmgr;
+    USE NVData;
+    USE JSON;
+    WRAPPER 'master_templates/master.tmpl'
+        header = locale.maketext('Acronis Backup Manager')
+        breadcrumburl = '/cgi/plugins/acronis.pl'
+        theme = 'bootstrap'
+        scripts = [
+            Whostmgr.find_file_url('/3rdparty/jquery/1.11.3/jquery-1.11.3.min.js'),
+        ]
+        extra_style = 'news_panel{}'
+-%]
+
+
+ <section class="container">
+ <div class="form-group">
+<div id="validate" style="display:none;">
+          <ul class="validation-container">
+                    <li class="validation validation-error">
+                        <span class="glyphicon glyphicon-exclamation-sign"></span>
+                        <span class="validation-message">
+                           Hostname or Username is missing!
+                        </span>
+                    </li>
+        </div>
+
+      <h1>Logging In</h1>
+      <div class="form-group"
+
+           <p><label for="UserName">User Name*</label> <input type="text" id="UserName" class="form-control" name="UserName"></p>
+          <p><label  for="HostName">Host Name*</label> <input type="text" id="HostName" class="form-control" name="HostName"></p>
+
+        <p><label id="passcolor" for="password">Password</label> <input id="UserPass" type="password" class="form-control" name="UserPass" ></p>
+
+                <p class="button"><button type="button" class="btn btn-primary" onclick="myFunction(event, $(this))">Next</button></p>   
+      </div>
+	  
+	  <br></br>
+    </div>
+        <div class="form-group" id="Backup" style="display:none;">
+        <h1>Backup Configuration</h1>
+
+        <label for="BackUpPlan">Backup Plan </label> <select id="BackUpPlan" name="BackUpPlan" class="form-control">
+  <option value="Hourly">Hourly</option>
+  <option value="Daily">Daily</option>
+  </select>
+  <br></br>
+<p><label for="ServerEncrypt">Encyption: </label>  <input id="ServerEncrypt" type="text" class="form-control" name="ServerEncrypt"><br>
+        <p><button type="button" class="btn btn-primary" onclick="">Save</button></p>
+
+        </div>
+
+
+        </section>
+		
+		<script>
+                function myFunction(e, button) {
+                var flag=1;
+
+                $('#HostName').css({"border-color":'black'});
+                $('#UserName').css({"border-color":'black'});
+                $('#validate').hide();
+
+                if ($('#HostName').val() == null || $('#HostName').val() == "") {
+					$('#HostName').css({"border-color":'red'});
+					$('#validate').show();
+					$( "#Backup" ).hide();
+					flag=-1;
+				}
+
+                if ($('#UserName').val() == null || $('#UserName').val() == "") {
+					$('#UserName').css({"border-color":'red'});
+					$('#validate').show();
+					$( "#Backup" ).hide();
+					flag=-1;
+                }
+                if(flag==1){
+					$( "#Backup" ).show()
+                }
+}
+                </script>
+
+[% END -%]
