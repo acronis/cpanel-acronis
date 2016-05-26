@@ -32,6 +32,7 @@ use HTTP::Request::Common;
 use Data::Dumper;
 
 use constant API_URI => '/api/1/';
+use constant DATA_PATH => '/usr/local/cpanel/3rdparty/etc/acronis/';
 use constant CONTENT_TYPE => 'application/json';
 
 
@@ -47,6 +48,7 @@ if ( !caller() ) {
 sub run {
 	my $acronisData = {
 			url => undef,
+			serverurl => undef,
 			username => undef,
 			password => undef,
 			cookies => undef
@@ -56,7 +58,7 @@ sub run {
     {
         local $/;
         open( my $fh, '<',
-            '/usr/local/cpanel/3rdparty/etc/acronis/acronisbackupwhm.conf' );
+            &DATA_PATH . 'acronisbackupwhm.conf' );
         $conf = JSON::decode_json(<$fh>);
     }
 
@@ -76,8 +78,8 @@ sub run {
 			
 			
 			
-			getBackUpPlans($acronisData);
-			print "{\"hostname2\":\"".$prm->param('HostName')."\"}\n";
+			
+			print "{\"hostname2\":\"".getBackUpPlans($acronisData)."\"}\n";
 			exit;
 		 }
 		print "{\"error\":\"there was an error\"}\n";
@@ -114,14 +116,17 @@ sub getCookie {
 	my $response = $ua->get($uri);
 	die $response->message() unless ($response->is_success());
 	
-	
 	my $content = JSON::XS->new->utf8->decode($response->content());
-	my $server_url = $content->{server_url};
+	$_[0]->{serverurl} = $content->{server_url};
 
-	$uri = URI->new($server_url . &API_URI);
+	$uri = URI->new($_[0]->{serverurl} . &API_URI);
 	$uri->path($uri->path . '/login/');;
 	$response = $ua->post($uri, Content_Type => &CONTENT_TYPE, 'Content' => JSON::XS->new->utf8->encode({username => $_[0]->{username}, password => $_[0]->{password}}));
 	die $response->message() unless ($response->is_success());
+	
+	$_[0]->{cookies} = $ua->cookie_jar;
+	
+	$_[0]->{cookies}->save(&DATA_PATH . 'whmapi.cookie');
 
 	return 1;
 }
@@ -133,12 +138,39 @@ sub getBackUpPlans {
 		my @urls = keys %{$jar->{COOKIES}};
 	}
 	else{
-		getCookie($_[0]);
+		if(getCookie($_[0]) != 1){
+			return '';
+		}		
 	}
-
 	
+	return get($_[0], 0, '/bc/api/ams/backup/plans')->message();
 
-	return 1;
+}
+
+sub get {
+
+
+	my $uri = undef;
+	if($_[1] == 1){
+		$uri = URI->new($_[0]->{serverurl} . &API_URI. $_[2]);
+	}
+	else{	
+		$uri = URI->new($_[0]->{serverurl} . $_[2]);
+	}
+	$uri->path($uri->path);
+
+	my $headers = HTTP::Headers->new('Content-Type' => &CONTENT_TYPE);
+	my $ua = LWP::UserAgent->new(
+		cookie_jar => $_[0]->{cookies},
+		default_headers => $headers
+	);
+	my $response = $ua->get($uri);
+	use Data::Dumper;
+	print Dumper($response);
+	$_[0]->{cookies}->save(&DATA_PATH . 'whmapi.cookie2');
+	
+	
+	return $response;	
 }
 
 sub validateUserHost {

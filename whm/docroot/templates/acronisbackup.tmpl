@@ -31,7 +31,7 @@
            <p><label for="UserName">User Name*</label> <input type="text" id="UserName" class="form-control" name="UserName"></p>
           <p><label  for="HostName">Host Name*</label> <input type="text" id="HostName" class="form-control" name="HostName"></p>
 
-        <p><label id="passcolor" for="password">Password</label> <input id="UserPass" type="password" class="form-control" name="UserPass" ></p>
+        <p><label id="passcolor" for="password">Password</label> <input id="UserPass" type="password" class="form-control" name="UserPass" data-isrequired="true"></p>
 
                 <p class="button"><button type="button" class="btn btn-primary" onclick="myFunction(event, $(this))">Next</button></p>   
       </div>
@@ -71,6 +71,13 @@
 
                 if ($('#UserName').val() == null || $('#UserName').val() == "") {
 					$('#UserName').css({"border-color":'red'});
+					$('#validate').show();
+					$( "#Backup" ).hide();
+					flag=-1;
+                }
+				
+				 if (($('#UserPass').val() == null || $('#UserPass').val() == "") && $('#UserPass').data("isrequired")=="true") {
+					$('#UserPass').css({"border-color":'red'});
 					$('#validate').show();
 					$( "#Backup" ).hide();
 					flag=-1;
