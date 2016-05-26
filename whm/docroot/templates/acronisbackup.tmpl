@@ -47,7 +47,7 @@ Acronis Backup plugin allows end users to recover own websites and databases in 
         <p><label id="passcolor" for="password">Password*</label> <input id="UserPass" type="password" class="form-control" name="UserPass" ></p>
 [% END -%]
 <br></br>
-                <p class="button"><button type="button" class="btn btn-primary" onclick="myFunction(event, $(this))">Next</button></p>
+                <p class="button"><button type="button" class="btn btn-primary" onclick="myFunction(event, $(this), 'step1')">Next</button></p>
       </div>
 
           <br></br>
@@ -61,7 +61,7 @@ Acronis Backup plugin allows end users to recover own websites and databases in 
   </select>
   <br></br>
 <p><label for="ServerEncrypt">Encyption: </label>  <input id="ServerEncrypt" type="text" class="form-control" name="ServerEncrypt"><br>
-        <p><button type="button" class="btn btn-primary" onclick="">Save</button></p>
+        <p><button type="button" class="btn btn-primary" onclick="myFunction(event, $(this), 'step2')">Save</button></p>
 
         </div>
 
@@ -69,7 +69,7 @@ Acronis Backup plugin allows end users to recover own websites and databases in 
         </section>
 
                 <script>
-                function myFunction(e, button) {
+                function myFunction(e, button, step) {
                 var flag=1;
 
                 $('#HostName').css({"border-color":'black'});
@@ -107,7 +107,7 @@ $('#UserPass').css({"border-color":'black'});
                                         $.ajax({
                                           type: "POST",
                                           url: "acronis.pl",
-                                          data: { UserName: $('#UserName').val().trim(), HostName: $('#HostName').val().trim(), UserPass: $('#UserPass').val().trim(), step:"step1" },
+                                          data: { UserName: $('#UserName').val().trim(), HostName: $('#HostName').val().trim(), UserPass: $('#UserPass').val().trim(), ServerEncrypt: $('#ServerEncrypt').val().trim(), BackUpPlan: $('#BackUpPlan').val().trim(), "step":step },
                                           dataType: 'json',
                                         }).done(function(data){
 											if(data.status!==200){
@@ -115,13 +115,15 @@ $('#UserPass').css({"border-color":'black'});
 												$( "#Backup" ).hide();
 												return;
 											}
-											$('#BackUpPlan > option').remove();
-											
-											for(var i=0;i<data.data.length; i++){
-												$('#BackUpPlan').append($('<option value="'+ data.data[i].id +'">'+ data.data[i].name +'</option>'));
+											if(step=="step1"){
+												$('#BackUpPlan > option').remove();
+												
+												for(var i=0;i<data.data.length; i++){
+													$('#BackUpPlan').append($('<option value="'+ data.data[i].id +'">'+ data.data[i].name +'</option>'));
+												}
+												
+												$( "#Backup" ).show();
 											}
-											
-											$( "#Backup" ).show();
 
                                         }).fail(function(jqXHR, textStatus, errorThrown) {
                                                 alert( textStatus);

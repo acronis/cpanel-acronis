@@ -52,7 +52,9 @@ sub run {
 			username => undef,
 			password => undef,
 			cookies => undef,
-			access_token => undef
+			access_token => undef,
+			planid => undef,
+			encrptpass => undef
 		};
     my $prm    = Cpanel::Form::Param->new();
     my $conf;
@@ -75,15 +77,27 @@ sub run {
 		$acronisData->{password} = $prm->param('UserPass');		 
 		 
 		 print "Content-type: application/json\r\n\r\n";
-		 if(validateUserHost($acronisData) eq ''){
-			
-			
-			
-			
+		 if(validateUserHost($acronisData, 0, $conf) eq ''){
+
 			print "{\"status\":200, \"data\":".getBackUpPlans($acronisData)."}\n";
 			exit;
 		 }
-		print "{\"error\":\"there was an error\"}\n";
+		print "{\"status\":200,\"error\":\"there was an error\"}\n";
+		exit;
+	}
+	elsif((defined $prm->param('step')) && ($prm->param('step') eq "step2")){
+		$acronisData->{url} = $prm->param('HostName');
+		$acronisData->{username} = $prm->param('UserName');
+		$acronisData->{password} = $prm->param('UserPass');	
+		$acronisData->{planid} = $prm->param('BackUpPlan');
+		$acronisData->{encrptpass} = $prm->param('ServerEncrypt');	
+		
+		if(validateUserHost($acronisData) eq ''){
+			print "{\"status\":200, \"data\":".getBackUpPlans($acronisData)."}\n";
+			exit;
+		 }
+		 
+		print "{\"status\":200,\"error\":\"there was an error\"}\n";
 		exit;
 	}
 
@@ -202,9 +216,17 @@ sub validateUserHost {
 		return "username is empty";
 	}
 	
-	if ( $_[0]->{password} eq '' ) {
+	if ( $_[0]->{password} eq '' && $conf.pass eq '') {
 		
 		return "password is empty";
+	}
+	
+	if($_[1] == 1){
+		if ( $_[0]->{password} eq '' && $conf.pass eq '') {
+			
+			return "password is empty";
+		}
+		
 	}
 	
 
