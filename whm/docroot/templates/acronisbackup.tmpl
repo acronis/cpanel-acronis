@@ -85,6 +85,9 @@ Specify a backup plan configured for cPanel backup. Provide encryption password 
         <p><button type="button" class="btn btn-primary" onclick="myFunction(event, $(this), 'step2')">Save</button></p>
 
         </div>
+		<div id="serverMessage">
+		</div>
+		<br/><br/><br/><br/><br/><br/>
 
 
         </section>
@@ -93,6 +96,8 @@ Specify a backup plan configured for cPanel backup. Provide encryption password 
                 function myFunction(e, button, step) {
                 var flag=1;
 				var curSelectBackup='[% options.plan %]';
+				button.prop("disable", true);
+				$('#serverMessage').hide().html('');
 
                 $('#HostName').css({"border-color":'black'});
                 $('#UserName').css({"border-color":'black'});
@@ -138,8 +143,10 @@ $('#UserPass').css({"border-color":'black'});
                                           data: { UserName: $('#UserName').val() != null?$('#UserName').val().trim():'', HostName: $('#HostName').val() != null?$('#HostName').val().trim():'', UserPass: $('#UserPass').val() != null?$('#UserPass').val().trim():'', ServerEncrypt: $('#ServerEncrypt').val() != null?$('#ServerEncrypt').val().trim():'', BackUpPlan: $('#BackUpPlan').val() != null?$('#BackUpPlan').val().trim():'', "step":step },
                                           dataType: 'json',
                                         }).done(function(data){
+										button.prop("disable", false);
                                                                                         if(data.status!==200){
                                                                                                 alert(data.msg);
+																								$('#serverMessage').html(data.msg).show();
 
 
 
@@ -155,9 +162,13 @@ $('#UserPass').css({"border-color":'black'});
                                                                                                 $( "#nextbutton" ).hide();
                                                                                                 $( "#Backup" ).show();
                                                                                         }
+																						if(step == "step2"){
+																							$('#serverMessage').html("Saved").show();
+																						}
 
                                         }).fail(function(jqXHR, textStatus, errorThrown) {
-                                                alert( textStatus);
+                                                $('#serverMessage').html('There was an error please try again.').show();
+												button.prop("disable", false);
                                         });
 
 

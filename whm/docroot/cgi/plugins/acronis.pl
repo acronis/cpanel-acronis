@@ -21,9 +21,12 @@ use URI                     ();
 use HTTP::Headers           ();
 use HTTP::Cookies           ();
 use HTTP::Request::Common   ();
+use Socket;
+use Sys::Hostname;
 
 # TODO: No no no plz and thanks <3
 use Data::Dumper;
+
 
 use constant API_URI      => '/api/1/';
 use constant DATA_PATH    => '/usr/local/cpanel/3rdparty/etc/acronis/';
@@ -93,43 +96,60 @@ sub run {
             $acronisData->{encrptpass} = $prm->param('ServerEncrypt');
 
             if ( Acronis::validateUserHost( $acronisData, 1,, $conf ) eq '' ) {
-                $conf->{host}       = $acronisData->{url};
-                $conf->{user}       = $acronisData->{username};
-				if ( $acronisData->{password} ) {
-					$conf->{pass}       = $acronisData->{password};
-				}
+                $conf->{host} = $acronisData->{url};
+                $conf->{user} = $acronisData->{username};
+                if ( $acronisData->{password} ) {
+                    $conf->{pass} = $acronisData->{password};
+                }
                 $conf->{plan}       = $acronisData->{planid};
                 $conf->{encryption} = $acronisData->{encrptpass};
 
-                open my $fh, ">", &DATA_PATH . 'acronisbackupwhm.conf';
-                print $fh JSON::encode_json($conf);
-                close $fh;
+                my $host = hostname();
+                my $address =
+                  inet_ntoa( scalar gethostbyname( $host || 'localhost' ) );
 
-                print "{\"status\":200, \"data\":\"saved\"}\n";
+                 my @servers = @{ Acronis::get_machines($acronisData) };
+
+                foreach my $server (@servers) {
+                    if ( grep { $_ eq $address } @{ $server->{ip} } ) {
+                        $conf->{serverid} = $server->{id};
+                        last;
+                    }
+                }
+
+                if( $conf->{serverid}){
+                        open my $fh, ">", &DATA_PATH . 'acronisbackupwhm.conf';
+                        print $fh JSON::encode_json($conf);
+                        close $fh;
+
+                        print qq[{"status":200, "data":"saved"}\n];
+                        exit;
+                }
+                print qq[{"status":500,"msg":"Could not find server id"}\n];
                 exit;
+
             }
 
-            print "{\"status\":500,\"msg\":\"there was an error\"}\n";
+            print qq[{"status":500,"msg":"there was an error"}\n];
             exit;
         }
-
-        print "{\"status\":500,\"msg\":\"Invalid Step\"}\n";
+        print qq[{"status":500,"msg":"Invalid Step"}\n];
         exit;
     }
 
     print "Content-type: text/html\r\n\r\n";
-	
-	my $planOptions = undef;
-	if($conf->{plan}){
-		$acronisData->{url}      = $conf->{host};
-		$acronisData->{username} = $conf->{user};
-		$acronisData->{password} = $conf->{pass};
-		
-		my $planData = Acronis::getBackUpPlans($acronisData);
-		if ( $planData->{status} == 200 ) {
-			$planOptions = $planData->{data};
-		}
-	}
+
+    my $planOptions = undef;
+    if ( $conf->{plan} ) {
+        $acronisData->{url}      = $conf->{host};
+        $acronisData->{username} = $conf->{user};
+        $acronisData->{password} = $conf->{pass};
+
+        my $planData = Acronis::getBackUpPlans($acronisData);
+        if ( $planData->{status} == 200 ) {
+            $planOptions = $planData->{data};
+        }
+    }
     Cpanel::Template::process_template(
         'whostmgr',
         {
@@ -137,9 +157,9 @@ sub run {
             'data'          => {
                 'version' => "Acronis Backup Manager .01",
             },
-            'form'    => $prm,
-            'options' => $conf,
-			'planoptions' => $planOptions,
+            'form'        => $prm,
+            'options'     => $conf,
+            'planoptions' => $planOptions,
         },
     );
 
