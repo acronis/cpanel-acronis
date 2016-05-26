@@ -49,8 +49,7 @@ sub run {
 			url => undef,
 			username => undef,
 			password => undef,
-			cookies => undef,	
-			@_
+			cookies => undef
 		};
     my $prm    = Cpanel::Form::Param->new();
     my $conf;
@@ -66,12 +65,23 @@ sub run {
         print "Access Denied";
         exit;
     }
-	
-	if($prm.param('step') == "step1"){
-		$acronisData.url = $prm.param('HostName');
-		$acronisData.username = $prm.param('UserName');
-		$acronisData.password = $prm.param('password');
-	
+
+	if((defined $prm->param('step')) && ($prm->param('step') eq "step1")){
+		$acronisData->{url} = $prm->param('HostName');
+		$acronisData->{username} = $prm->param('UserName');
+		$acronisData->{password} = $prm->param('UserPass');		 
+		 
+		 print "Content-type: application/json\r\n\r\n";
+		 if(validateUserHost($acronisData) eq ''){
+			
+			
+			
+			getBackUpPlans($acronisData);
+			print "{\"hostname2\":\"".$prm->param('HostName')."\"}\n";
+			exit;
+		 }
+		print "{\"error\":\"there was an error\"}\n";
+		exit;
 	}
 
     print "Content-type: text/html\r\n\r\n";
@@ -97,9 +107,9 @@ sub getCookie {
 		cookie_jar => {},
 		default_headers => $headers
 	);
-	my $uri = URI->new($_[0]->url . &API_URI);
+	my $uri = URI->new($_[0]->{url} . &API_URI);
 	$uri->path($uri->path . 'accounts/');
-	$uri->query_form('login' => $_[0]->username);
+	$uri->query_form('login' => $_[0]->{username});
 	
 	my $response = $ua->get($uri);
 	die $response->message() unless ($response->is_success());
@@ -110,7 +120,7 @@ sub getCookie {
 
 	$uri = URI->new($server_url . &API_URI);
 	$uri->path($uri->path . '/login/');;
-	$response = $ua->post($uri, Content_Type => &CONTENT_TYPE, 'Content' => JSON::XS->new->utf8->encode({username => $_[0]->username, password => $_[0]->password}));
+	$response = $ua->post($uri, Content_Type => &CONTENT_TYPE, 'Content' => JSON::XS->new->utf8->encode({username => $_[0]->{username}, password => $_[0]->{password}}));
 	die $response->message() unless ($response->is_success());
 
 	return 1;
@@ -122,6 +132,9 @@ sub getBackUpPlans {
 		my $jar = HTTP::Cookies->new(file => $_[0]->{cookies});
 		my @urls = keys %{$jar->{COOKIES}};
 	}
+	else{
+		getCookie($_[0]);
+	}
 
 	
 
@@ -130,20 +143,22 @@ sub getBackUpPlans {
 
 sub validateUserHost {
 
-	if ( $_[0].url ne '' ) {
-		return 0;
+	if ( $_[0]->{url} eq '' ) {
+		return "url is empty";
 	}
 	
-	if ( $_[0].username ne '' ) {
-		return 0;
+	if ( $_[0]->{username} eq '' ) {
+		
+		return "username is empty";
 	}
 	
-	if ( $_[0].password ne '' ) {
-		return 0;
+	if ( $_[0]->{password} eq '' ) {
+		
+		return "password is empty";
 	}
 	
 
-	return 1;
+	return "";
 }
 
 1;

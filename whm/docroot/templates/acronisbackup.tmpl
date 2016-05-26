@@ -76,7 +76,22 @@
 					flag=-1;
                 }
                 if(flag==1){
-					$( "#Backup" ).show()
+
+					$.ajax({
+					  type: "POST",
+					  url: "acronis.pl",
+					  data: { UserName: $('#UserName').val(), HostName: $('#HostName').val(), UserPass: $('#UserPass').val(), step:"step1" },
+					  dataType: 'json',
+					}).done(function(data){
+					//alert(data);
+						$( "#Backup" ).show()
+					
+					}).fail(function(jqXHR, textStatus, errorThrown) {
+						alert( textStatus);
+					});
+				
+				
+					
                 }
 }
                 </script>
