@@ -130,15 +130,15 @@ sub getBackUpPlans {
 
 sub validateUserHost {
 
-	if ( $_[0].url != '' ) {
+	if ( $_[0].url ne '' ) {
 		return 0;
 	}
 	
-	if ( $_[0].username != '' ) {
+	if ( $_[0].username ne '' ) {
 		return 0;
 	}
 	
-	if ( $_[0].password != '' ) {
+	if ( $_[0].password ne '' ) {
 		return 0;
 	}
 	
