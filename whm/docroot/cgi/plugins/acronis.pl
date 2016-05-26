@@ -71,33 +71,49 @@ sub run {
         exit;
     }
 
-	if((defined $prm->param('step')) && ($prm->param('step') eq "step1")){
-		$acronisData->{url} = $prm->param('HostName');
-		$acronisData->{username} = $prm->param('UserName');
-		$acronisData->{password} = $prm->param('UserPass');		 
-		 
-		 print "Content-type: application/json\r\n\r\n";
-		 if(validateUserHost($acronisData, 0, $conf) eq ''){
+	if((defined $prm->param('step'))){
+		print "Content-type: application/json\r\n\r\n";
+		if(($prm->param('step') eq "step1")){
+			$acronisData->{url} = $prm->param('HostName');
+			$acronisData->{username} = $prm->param('UserName');
+			$acronisData->{password} = $prm->param('UserPass');		 
+			 
+			 if(validateUserHost($acronisData, 0, $conf) eq ''){
+				print "{\"status\":200, \"data\":".getBackUpPlans($acronisData)."}\n";
+				exit;
+			 }
+			print "{\"status\":500,\"msg\":\"there was an error\"}\n";
+			exit;
+		}
+		elsif(($prm->param('step') eq "step2")){
+			$acronisData->{url} = $prm->param('HostName');
+			$acronisData->{username} = $prm->param('UserName');
+			if($prm->param('UserPass') ne ''){
+				$acronisData->{password} = $prm->param('UserPass');	
+			}
+			$acronisData->{planid} = $prm->param('BackUpPlan');
+			$acronisData->{encrptpass} = $prm->param('ServerEncrypt');	
+			
+			if(validateUserHost($acronisData, 1, , $conf) eq ''){
+				$conf->{host}=$acronisData->{url};
+				$conf->{user}=$acronisData->{username};
+				$conf->{pass}=$acronisData->{password};
+				$conf->{plan}=$acronisData->{planid};
+				$conf->{encryption}=$acronisData->{encrptpass};
+				
+				open my $fh, ">", &DATA_PATH . 'acronisbackupwhm.conf';
+				print $fh JSON::encode_json($conf);
+				close $fh;
 
-			print "{\"status\":200, \"data\":".getBackUpPlans($acronisData)."}\n";
+				print "{\"status\":200, \"data\":\"saved\"}\n";
+				exit;
+			 }
+			 
+			print "{\"status\":500,\"msg\":\"there was an error\"}\n";
 			exit;
-		 }
-		print "{\"status\":200,\"error\":\"there was an error\"}\n";
-		exit;
-	}
-	elsif((defined $prm->param('step')) && ($prm->param('step') eq "step2")){
-		$acronisData->{url} = $prm->param('HostName');
-		$acronisData->{username} = $prm->param('UserName');
-		$acronisData->{password} = $prm->param('UserPass');	
-		$acronisData->{planid} = $prm->param('BackUpPlan');
-		$acronisData->{encrptpass} = $prm->param('ServerEncrypt');	
+		}
 		
-		if(validateUserHost($acronisData) eq ''){
-			print "{\"status\":200, \"data\":".getBackUpPlans($acronisData)."}\n";
-			exit;
-		 }
-		 
-		print "{\"status\":200,\"error\":\"there was an error\"}\n";
+		print "{\"status\":500,\"msg\":\"Invalid Step\"}\n";
 		exit;
 	}
 
