@@ -86,7 +86,7 @@ sub run {
         elsif ( ( $prm->param('step') eq "step2" ) ) {
             $acronisData->{url}      = $prm->param('HostName');
             $acronisData->{username} = $prm->param('UserName');
-            if ( $prm->param('UserPass') ne '' ) {
+            if ( $prm->param('UserPass') ) {
                 $acronisData->{password} = $prm->param('UserPass');
             }
             $acronisData->{planid}     = $prm->param('BackUpPlan');
@@ -95,7 +95,9 @@ sub run {
             if ( Acronis::validateUserHost( $acronisData, 1,, $conf ) eq '' ) {
                 $conf->{host}       = $acronisData->{url};
                 $conf->{user}       = $acronisData->{username};
-                $conf->{pass}       = $acronisData->{password};
+				if ( $acronisData->{password} ) {
+					$conf->{pass}       = $acronisData->{password};
+				}
                 $conf->{plan}       = $acronisData->{planid};
                 $conf->{encryption} = $acronisData->{encrptpass};
 
@@ -116,6 +118,18 @@ sub run {
     }
 
     print "Content-type: text/html\r\n\r\n";
+	
+	my $planOptions = undef;
+	if($conf->{plan}){
+		$acronisData->{url}      = $conf->{host};
+		$acronisData->{username} = $conf->{user};
+		$acronisData->{password} = $conf->{pass};
+		
+		my $planData = Acronis::getBackUpPlans($acronisData);
+		if ( $planData->{status} == 200 ) {
+			$planOptions = $planData->{data};
+		}
+	}
     Cpanel::Template::process_template(
         'whostmgr',
         {
@@ -125,6 +139,7 @@ sub run {
             },
             'form'    => $prm,
             'options' => $conf,
+			'planoptions' => $planOptions,
         },
     );
 

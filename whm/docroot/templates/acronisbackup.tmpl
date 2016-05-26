@@ -49,7 +49,7 @@ Acronis Backup plugin allows end users to recover own websites and databases in 
                 <p><label id="passcolor" for="password">Password</label> <input id="UserPass" type="password" placeholder="Adding Password will change your existing password" class="form-control" name="UserPass" ></p>
 [% END -%]
 
-[% IF ! options.pass && options.user && options.host %]
+[% IF options.pass && options.user && options.host %]
            
         [% ELSE %]
            <p class="button"><button id="nextbutton" type="button" class="btn btn-primary" onclick="myFunction(event, $(this), 'step1')">Next</button></p>
@@ -59,7 +59,7 @@ Acronis Backup plugin allows end users to recover own websites and databases in 
 
 
     </div>
-	[% IF ! options.pass && options.user && options.host %]
+	[% IF options.pass && options.user && options.host %]
             <div class="form-group" id="Backup">
         [% ELSE %]
             <div class="form-group" id="Backup" style="display:none;">
@@ -70,8 +70,15 @@ Acronis Backup plugin allows end users to recover own websites and databases in 
 
 Specify a backup plan configured for cPanel backup. Provide encryption password in case if the encryption is enabled in the backup plan.<br></br>
        <p> <label for="BackUpPlan">Backup Plan </label> <select id="BackUpPlan" name="BackUpPlan" class="form-control">
-  <option value="Hourly">Hourly</option>
-  <option value="Daily">Daily</option>
+  [% IF planoptions %]
+	[%- FOREACH e IN planoptions -%]
+		[% IF e.id == options.plan  %]
+			<option value="[% e.id %]" selected>[% e.name %]</option>
+		[% ELSE %]
+			<option value="[% e.id %]">[% e.name %]</option>
+		[% END %]
+	[%- END -%]
+  [% END %]
   </select></p>
 
 <p><label for="ServerEncrypt">Encyption: </label>  <input id="ServerEncrypt" type="text" class="form-control" name="ServerEncrypt"><br>
@@ -128,7 +135,7 @@ $('#UserPass').css({"border-color":'black'});
                                         $.ajax({
                                           type: "POST",
                                           url: "acronis.pl",
-                                          data: { UserName: $('#UserName').val().trim(), HostName: $('#HostName').val().trim(), UserPass: $('#UserPass').val().trim(), ServerEncrypt: $('#ServerEncrypt').val().trim(), BackUpPlan: $('#BackUpPlan').val().trim(), "step":step },
+                                          data: { UserName: $('#UserName').val() != null?$('#UserName').val().trim():'', HostName: $('#HostName').val() != null?$('#HostName').val().trim():'', UserPass: $('#UserPass').val() != null?$('#UserPass').val().trim():'', ServerEncrypt: $('#ServerEncrypt').val() != null?$('#ServerEncrypt').val().trim():'', BackUpPlan: $('#BackUpPlan').val() != null?$('#BackUpPlan').val().trim():'', "step":step },
                                           dataType: 'json',
                                         }).done(function(data){
                                                                                         if(data.status!==200){
