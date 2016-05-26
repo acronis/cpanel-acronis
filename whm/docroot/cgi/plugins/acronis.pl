@@ -51,7 +51,8 @@ sub run {
 			serverurl => undef,
 			username => undef,
 			password => undef,
-			cookies => undef
+			cookies => undef,
+			access_token => undef
 		};
     my $prm    = Cpanel::Form::Param->new();
     my $conf;
@@ -79,7 +80,7 @@ sub run {
 			
 			
 			
-			print "{\"hostname2\":\"".getBackUpPlans($acronisData)."\"}\n";
+			print "{\"status\":200, data:".getBackUpPlans($acronisData)."}\n";
 			exit;
 		 }
 		print "{\"error\":\"there was an error\"}\n";
@@ -124,6 +125,21 @@ sub getCookie {
 	$response = $ua->post($uri, Content_Type => &CONTENT_TYPE, 'Content' => JSON::XS->new->utf8->encode({username => $_[0]->{username}, password => $_[0]->{password}}));
 	die $response->message() unless ($response->is_success());
 	
+	$uri = URI->new($_[0]->{serverurl} . &API_URI);
+	$uri->path($uri->path . '/groups/self/backupconsole');;
+	$response = $ua->get($uri);
+	die $response->message() unless ($response->is_success());
+
+	$content = JSON::XS->new->utf8->decode($response->content());
+	$_[0]->{access_token} = $content->{token};
+	$_[0]->{serverurl} = $content->{host};
+	
+	$uri = URI->new($_[0]->{serverurl});
+	$uri->path($uri->path . '/api/remote_connection');;
+	$response = $ua->post($uri, Content_Type => &CONTENT_TYPE, 'Content' => JSON::XS->new->utf8->encode({access_token => $_[0]->{access_token}}));
+	
+	die $response->message() unless ($response->is_success());
+	
 	$_[0]->{cookies} = $ua->cookie_jar;
 	
 	$_[0]->{cookies}->save(&DATA_PATH . 'whmapi.cookie');
@@ -143,7 +159,14 @@ sub getBackUpPlans {
 		}		
 	}
 	
-	return get($_[0], 0, '/bc/api/ams/backup/plans')->message();
+	my $plans = JSON::decode_json(get($_[0], 0, '/api/ams/backup/plans')->content());
+	my $clientList = [];
+	foreach my $i (0 .. $#plans) {
+	  $clientList.push({id => $plans[$i].id, name => $plans[$i].name});
+	}
+	
+	
+	return JSON::encode_json($clientList);
 
 }
 
@@ -165,9 +188,6 @@ sub get {
 		default_headers => $headers
 	);
 	my $response = $ua->get($uri);
-	use Data::Dumper;
-	print Dumper($response);
-	$_[0]->{cookies}->save(&DATA_PATH . 'whmapi.cookie2');
 	
 	
 	return $response;	
